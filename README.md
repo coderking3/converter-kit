@@ -62,7 +62,7 @@ converter archive.txt --out restored.jpg
 
 ```json
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "createdAt": "2024-01-15T10:30:00.000Z",
   "file": {
     "name": "photo.jpg",
