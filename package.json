@@ -1,0 +1,28 @@
+{
+  "name": "@king-3/converter-kit",
+  "version": "1.0.0",
+  "description": "文件与 TXT 互转工具",
+  "type": "module",
+  "main": "./src/converter.js",
+  "bin": {
+    "converter": "./bin/converter.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node bin/converter.js"
+  },
+  "keywords": [
+    "converter",
+    "base64",
+    "file-converter"
+  ],
+  "author": "king-3",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
