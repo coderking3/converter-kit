@@ -14,5 +14,5 @@
   },
   "scripts": {
     "test": "node bin/converter.js"
-  },
+  }
 }
