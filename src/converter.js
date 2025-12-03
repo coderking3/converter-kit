@@ -4,7 +4,7 @@ import { parseArgs } from 'node:util'
 
 /**
  * Converter Kit - 单文件与 TXT 互转工具
- * 
+ *
  * 用法:
  *   converter file.jpg --out output.txt
  *   converter archive.txt --out file.jpg
@@ -35,7 +35,7 @@ if (values.help) {
 Converter Kit - 文件与 TXT 互转工具
 
 用法:
-  converter <file> [--out <output>]
+  converter <file> [--out <o>]
 
 示例:
   converter photo.jpg --out archive.txt    # 文件 → TXT
@@ -53,10 +53,7 @@ Converter Kit - 文件与 TXT 互转工具
 
 // 显示版本
 if (values.version) {
-  const packageJson = JSON.parse(
-    fs.readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
-  )
-  console.log(packageJson.version)
+  console.log('1.0.0')
   process.exit(0)
 }
 
@@ -71,11 +68,22 @@ const inputPath = positionals[0]
 const userOutputPath = values.out || null
 
 /**
+ * 确保目录存在，不存在则创建
+ */
+function ensureDirectoryExists(filePath) {
+  const dirname = path.dirname(filePath)
+  if (!fs.existsSync(dirname)) {
+    fs.mkdirSync(dirname, { recursive: true })
+    console.log(`📁 已创建目录: ${dirname}`)
+  }
+}
+
+/**
  * 单个文件 → TXT
  */
 function fileToTxt(filePath, outputPath) {
   const absolutePath = path.resolve(filePath)
-  
+
   if (!fs.existsSync(absolutePath)) {
     console.error(`❌ 文件不存在: ${filePath}`)
     process.exit(1)
@@ -104,6 +112,9 @@ function fileToTxt(filePath, outputPath) {
   }
 
   const jsonString = JSON.stringify(archiveData, null, 2)
+
+  // 确保输出目录存在
+  ensureDirectoryExists(outputPath)
   fs.writeFileSync(outputPath, jsonString, 'utf-8')
 
   console.log(`✅ 文件 → TXT 转换完成!`)
@@ -116,7 +127,7 @@ function fileToTxt(filePath, outputPath) {
  */
 function txtToFile(txtPath, outputPath) {
   const content = fs.readFileSync(txtPath, 'utf-8')
-  
+
   let archiveData
   try {
     archiveData = JSON.parse(content)
@@ -131,12 +142,15 @@ function txtToFile(txtPath, outputPath) {
   }
 
   const file = archiveData.file
-  
+
   if (!outputPath) {
     outputPath = file.name
   }
 
   const buffer = Buffer.from(file.base64, 'base64')
+
+  // 确保输出目录存在
+  ensureDirectoryExists(outputPath)
   fs.writeFileSync(outputPath, buffer)
 
   console.log(`✅ TXT → 文件 还原完成!`)
@@ -152,13 +166,13 @@ function formatBytes(bytes) {
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
 }
 
 // 主逻辑
 try {
   const absoluteInput = path.resolve(inputPath)
-  
+
   if (!fs.existsSync(absoluteInput)) {
     console.error(`❌ 文件不存在: ${inputPath}`)
     process.exit(1)
@@ -170,7 +184,10 @@ try {
     const outputPath = userOutputPath ? path.resolve(userOutputPath) : null
     txtToFile(absoluteInput, outputPath)
   } else {
-    const defaultOutput = absoluteInput.replace(path.extname(absoluteInput), '.txt')
+    const defaultOutput = absoluteInput.replace(
+      path.extname(absoluteInput),
+      '.txt'
+    )
     const outputPath = userOutputPath
       ? path.resolve(userOutputPath)
       : defaultOutput
