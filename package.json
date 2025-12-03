@@ -6,8 +6,8 @@
   "license": "MIT",
   "author": "king3 <w2196592083@gmail.com>",
   "files": [
-    "dist",
-    "bin"
+    "bin",
+    "src"
   ],
   "publishConfig": {
     "access": "public"
