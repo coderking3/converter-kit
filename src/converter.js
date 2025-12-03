@@ -10,6 +10,8 @@ import { parseArgs } from 'node:util'
  *   converter archive.txt --out file.jpg
  */
 
+const VERSION = '1.2.0'
+
 // 解析参数
 const { positionals, values } = parseArgs({
   options: {
@@ -53,7 +55,7 @@ Converter Kit - 文件与 TXT 互转工具
 
 // 显示版本
 if (values.version) {
-  console.log('1.0.0')
+  console.log(`v${VERSION}`)
   process.exit(0)
 }
 
@@ -101,7 +103,7 @@ function fileToTxt(filePath, outputPath) {
   const fileExt = path.extname(absolutePath)
 
   const archiveData = {
-    version: '1.0',
+    version: VERSION,
     createdAt: new Date().toISOString(),
     file: {
       name: fileName,
