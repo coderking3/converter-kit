@@ -1,28 +1,18 @@
 {
   "name": "@king-3/converter-kit",
   "version": "1.0.0",
-  "description": "文件与 TXT 互转工具",
+  "description": "File to TXT conversion tool",
   "type": "module",
-  "main": "./src/converter.js",
-  "bin": {
-    "converter": "./bin/converter.js"
-  },
+  "license": "MIT",
+  "author": "king3 <w2196592083@gmail.com>",
   "files": [
-    "bin",
-    "src",
-    "README.md"
+    "dist",
+    "bin"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "node bin/converter.js"
   },
-  "keywords": [
-    "converter",
-    "base64",
-    "file-converter"
-  ],
-  "author": "king-3",
-  "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0"
-  }
 }
