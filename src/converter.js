@@ -80,6 +80,23 @@ function ensureDirectoryExists(filePath) {
   }
 }
 
+// 获取当前UTC+8时间
+function nowUTC8({ utcSuffix = false }) {
+  const date = new Date()
+  const UTC8Time = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+
+  const padStart = (num) => num.toString().padStart(2, '0')
+
+  const year = UTC8Time.getUTCFullYear()
+  const month = padStart(UTC8Time.getUTCMonth() + 1)
+  const day = padStart(UTC8Time.getUTCDate())
+  const hours = padStart(UTC8Time.getUTCHours())
+  const minutes = padStart(UTC8Time.getUTCMinutes())
+  const seconds = padStart(UTC8Time.getUTCSeconds())
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC+8`
+}
+
 /**
  * 单个文件 → TXT
  */
@@ -104,7 +121,7 @@ function fileToTxt(filePath, outputPath) {
 
   const archiveData = {
     version: VERSION,
-    createdAt: new Date().toISOString(),
+    createdAt: nowUTC8(),
     file: {
       name: fileName,
       extension: fileExt,
