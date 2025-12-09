@@ -1,5 +1,8 @@
+/* eslint-disable no-console */
+import { Buffer } from 'node:buffer'
 import fs from 'node:fs'
 import path from 'node:path'
+import process from 'node:process'
 import { parseArgs } from 'node:util'
 
 /**
@@ -10,25 +13,26 @@ import { parseArgs } from 'node:util'
  *   converter archive.txt --out file.jpg
  */
 
-const VERSION = '1.3.0'
+const VERSION = '1.3.5'
+const CONVERTER_EXT = '.txt'
 
 // 解析参数
 const { positionals, values } = parseArgs({
   options: {
     out: {
       type: 'string',
-      short: 'o',
+      short: 'o'
     },
     help: {
       type: 'boolean',
-      short: 'h',
+      short: 'h'
     },
     version: {
       type: 'boolean',
-      short: 'v',
-    },
+      short: 'v'
+    }
   },
-  allowPositionals: true,
+  allowPositionals: true
 })
 
 // 显示帮助
@@ -66,14 +70,13 @@ if (positionals.length === 0) {
   process.exit(1)
 }
 
-const inputPath = positionals[0]
+const userInputPath = positionals[0]
 const userOutputPath = values.out || null
 
 /**
  * 确保目录存在，不存在则创建
  */
-function ensureDirectoryExists(filePath) {
-  const dirname = path.dirname(filePath)
+function ensureDirectoryExists(dirname) {
   if (!fs.existsSync(dirname)) {
     fs.mkdirSync(dirname, { recursive: true })
     console.log(`📁 已创建目录: ${dirname}`)
@@ -81,7 +84,7 @@ function ensureDirectoryExists(filePath) {
 }
 
 // 获取当前UTC+8时间
-function nowUTC8({ utcSuffix = false }) {
+function nowUTC8({ utcSuffix = false } = {}) {
   const date = new Date()
   const UTC8Time = new Date(date.getTime() + 8 * 60 * 60 * 1000)
 
@@ -94,13 +97,15 @@ function nowUTC8({ utcSuffix = false }) {
   const minutes = padStart(UTC8Time.getUTCMinutes())
   const seconds = padStart(UTC8Time.getUTCSeconds())
 
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC+8`
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}${
+    utcSuffix ? ' UTC+8' : ''
+  }`
 }
 
 /**
  * 单个文件 → TXT
  */
-function fileToTxt(filePath, outputPath) {
+function fileToTxt(filePath, outputDir, outputFileName = null) {
   const absolutePath = path.resolve(filePath)
 
   if (!fs.existsSync(absolutePath)) {
@@ -126,31 +131,35 @@ function fileToTxt(filePath, outputPath) {
       name: fileName,
       extension: fileExt,
       size: buffer.length,
-      base64: base64,
-    },
+      base64
+    }
   }
 
   const jsonString = JSON.stringify(archiveData, null, 2)
 
+  const finalFileName =
+    outputFileName || path.basename(absolutePath, fileExt) + CONVERTER_EXT
+  const finalOutputPath = path.join(outputDir, finalFileName)
+
   // 确保输出目录存在
-  ensureDirectoryExists(outputPath)
-  fs.writeFileSync(outputPath, jsonString, 'utf-8')
+  ensureDirectoryExists(outputDir)
+  fs.writeFileSync(finalOutputPath, jsonString, 'utf-8')
 
   console.log(`✅ 文件 → TXT 转换完成!`)
   console.log(`   原文件: ${fileName} (${formatBytes(buffer.length)})`)
-  console.log(`   输出: ${outputPath}`)
+  console.log(`   输出: ${finalOutputPath}`)
 }
 
 /**
  * TXT → 还原文件
  */
-function txtToFile(txtPath, outputPath) {
+function txtToFile(txtPath, outputDir, outputFileName = null) {
   const content = fs.readFileSync(txtPath, 'utf-8')
 
   let archiveData
   try {
     archiveData = JSON.parse(content)
-  } catch (err) {
+  } catch {
     console.error('❌ 无法解析归档文件，请确保是有效的 JSON 格式')
     process.exit(1)
   }
@@ -161,20 +170,19 @@ function txtToFile(txtPath, outputPath) {
   }
 
   const file = archiveData.file
-
-  if (!outputPath) {
-    outputPath = file.name
-  }
-
   const buffer = Buffer.from(file.base64, 'base64')
 
+  // 如果没有指定输出文件名，使用归档中的原始文件名
+  const finalFileName = outputFileName || file.name
+  const finalOutputPath = path.join(outputDir, finalFileName)
+
   // 确保输出目录存在
-  ensureDirectoryExists(outputPath)
-  fs.writeFileSync(outputPath, buffer)
+  ensureDirectoryExists(outputDir)
+  fs.writeFileSync(finalOutputPath, buffer)
 
   console.log(`✅ TXT → 文件 还原完成!`)
   console.log(`   文件名: ${file.name} (${formatBytes(file.size)})`)
-  console.log(`   输出: ${outputPath}`)
+  console.log(`   输出: ${finalOutputPath}`)
 }
 
 /**
@@ -185,35 +193,55 @@ function formatBytes(bytes) {
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
+  return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`
 }
 
 // 主逻辑
-try {
-  const absoluteInput = path.resolve(inputPath)
+function converter() {
+  try {
+    const inputPath = path.resolve(userInputPath)
 
-  if (!fs.existsSync(absoluteInput)) {
-    console.error(`❌ 文件不存在: ${inputPath}`)
+    if (!fs.existsSync(inputPath)) {
+      console.error(`❌ 文件不存在: ${userInputPath}`)
+      process.exit(1)
+    }
+
+    const inputDir = path.dirname(inputPath)
+    const ext = path.extname(inputPath).toLowerCase()
+
+    // TXT → 还原文件
+    if (ext === CONVERTER_EXT) {
+      let outputDir, outputFileName
+
+      if (userOutputPath) {
+        const resolvedOutput = path.resolve(userOutputPath)
+        outputDir = path.dirname(resolvedOutput)
+        outputFileName = path.basename(resolvedOutput)
+      } else {
+        outputDir = inputDir
+        outputFileName = null
+      }
+
+      txtToFile(inputPath, outputDir, outputFileName)
+    }
+    // 文件 → TXT
+    else {
+      let outputDir, outputFileName
+
+      if (userOutputPath) {
+        const resolvedOutput = path.resolve(userOutputPath)
+        outputDir = path.dirname(resolvedOutput)
+        outputFileName = path.basename(resolvedOutput)
+      } else {
+        outputDir = inputDir
+        outputFileName = path.basename(inputPath, ext) + CONVERTER_EXT
+      }
+
+      fileToTxt(inputPath, outputDir, outputFileName)
+    }
+  } catch (err) {
+    console.error('❌ 转换失败:', err.message)
     process.exit(1)
   }
-
-  const ext = path.extname(absoluteInput).toLowerCase()
-
-  if (ext === '.txt' || ext === '.json') {
-    const outputPath = userOutputPath ? path.resolve(userOutputPath) : null
-    txtToFile(absoluteInput, outputPath)
-  } else {
-    const defaultOutput = absoluteInput.replace(
-      path.extname(absoluteInput),
-      '.txt'
-    )
-    const outputPath = userOutputPath
-      ? path.resolve(userOutputPath)
-      : defaultOutput
-
-    fileToTxt(absoluteInput, outputPath)
-  }
-} catch (err) {
-  console.error('❌ 转换失败:', err.message)
-  process.exit(1)
 }
+converter()
