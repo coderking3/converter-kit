@@ -2,6 +2,10 @@
 
 文件与 TXT 互转工具，支持将任意文件转换为 Base64 编码的 TXT 文件并可还原。
 
+> ⚠️ This repository has been archived.
+> 
+> The project has moved to [file-kit](https://github.com/coderking3/file-kit), where all future updates will be maintained.
+
 ## 安装
 
 ```bash
